@@ -1,0 +1,50 @@
+name: Publish to npm
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    # Check for changes in package.json version
+    - id: version_check
+      run: |
+        VERSION_CHANGED=$(git diff HEAD^ HEAD -- package.json | grep '"version":')
+        if [[ "$VERSION_CHANGED" != "" ]]; then
+          echo "Version changed. Proceeding to publish..."
+          echo "::set-output name=changed::true"
+        else
+          echo "Version not changed. Skipping publish..."
+          echo "::set-output name=changed::false"
+        fi
+    # Setting up Node.js
+    - name: Set up Node.js
+      if: steps.version_check.outputs.changed == 'true'
+      uses: actions/setup-node@v2
+      with:
+        node-version: '14'
+        registry-url: 'https://registry.npmjs.org'
+
+    # Installing project dependencies with yarn
+    - name: Install Dependencies
+      if: steps.version_check.outputs.changed == 'true'
+      run: yarn install --frozen-lockfile
+
+    # Transpiling TypeScript
+    - name: Build TypeScript
+      if: steps.version_check.outputs.changed == 'true'
+      run: yarn build
+
+    # Publishing to npm using yarn
+    - name: Publish to npm
+      if: steps.version_check.outputs.changed == 'true'
+      run: yarn publish --non-interactive --new-version $(node -p "require('./package.json').version")
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
