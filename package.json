@@ -1,0 +1,14 @@
+{
+  "name": "@rickgeersing/input-validation",
+  "version": "0.0.1",
+  "main": "dist/index.js",
+  "author": "Rick Geersing",
+  "license": "MIT",
+  
+  "scripts": {
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "typescript": "^5.1.6"
+  }
+}
