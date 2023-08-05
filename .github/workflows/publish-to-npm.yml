@@ -16,13 +16,26 @@ jobs:
     # Check for changes in package.json version
     - id: version_check
       run: |
-        VERSION_CHANGED=$(git diff HEAD^ HEAD -- package.json | grep '"version":')
-        if [[ "$VERSION_CHANGED" != "" ]]; then
-          echo "Version changed. Proceeding to publish..."
-          echo "::set-output name=changed::true"
+        CURRENT_VERSION=$(node -p "require('./package.json').version")
+
+        # Try to checkout the previous commit. If not possible, assume change.
+        git checkout HEAD^ 2> /dev/null
+
+        # If checkout was successful, compare, otherwise assume changed.
+        if [ $? -eq 0 ]; then
+          PREVIOUS_VERSION=$(node -p "require('./package.json').version")
+          git checkout -
+
+          if [ "$CURRENT_VERSION" != "$PREVIOUS_VERSION" ]; then
+            echo "Version changed from $PREVIOUS_VERSION to $CURRENT_VERSION. Proceeding to publish..."
+            echo "::set-output name=changed::true"
+          else
+            echo "Version not changed. Skipping publish..."
+            echo "::set-output name=changed::false"
+          fi
         else
-          echo "Version not changed. Skipping publish..."
-          echo "::set-output name=changed::false"
+          echo "Unable to determine previous version. Assuming version changed."
+          echo "::set-output name=changed::true"
         fi
     # Setting up Node.js
     - name: Set up Node.js
