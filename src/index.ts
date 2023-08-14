@@ -42,6 +42,29 @@ export function validate(input: any, schema: InputValidationSchema): InputValida
     }
 }
 
+export function validateFormData(formData: FormData, schema: InputValidationSchema): InputValidationResult {
+    const errors: InputValidationErrors = {}
+    const schemaKeys = Object.keys(schema)
+    
+    for (const key of schemaKeys) {
+        const input = formData.get(key)
+        if (input === null) {
+            errors[key] = schema[key]
+            continue
+        }
+
+        const invalidVariants = validateInput(input, schema[key])
+        if (invalidVariants) {
+            errors[key] = invalidVariants
+        }
+    }
+
+    return {
+        valid: Object.keys(errors).length === 0,
+        errors: Object.keys(errors).length > 0 ? errors : undefined
+    }
+}
+
 function validateInput(input: any, variants: InputValidationVariant[]): InputValidationErrorVariant[] | false {
     const invalidVariants: InputValidationErrorVariant[] = []
 
